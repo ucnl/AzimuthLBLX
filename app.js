@@ -574,8 +574,17 @@ const App = (() => {
 		if (isGnssConnected) {
 			disconnectGNSS();
 		}
-		stopInternalGPSWatch();
+		stopInternalGPS();
+		
+		// Отправляем команду остановки нативного GPS
+		const iframe = document.createElement('iframe');
+		iframe.style.display = 'none';
+		iframe.src = 'app://stop_gps';
+		document.body.appendChild(iframe);
+		setTimeout(() => document.body.removeChild(iframe), 100);
+		
 		updateGNSSButton();
+		closeAllDropdowns();
 	}
 
 	function updateGNSSButton() {
