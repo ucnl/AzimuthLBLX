@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>AzimuthLBLX</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ===== ВЕРХНЯЯ ПАНЕЛЬ ===== -->
+        <div id="top-bar">
+            <div id="connection-indicator" title="Статус соединения"></div>
+            <span id="device-label">Zima2 LBL</span>
+            <span id="status-text">Не подключено</span>
+            
+            <button id="btn-theme" class="top-btn btn-theme" onclick="App.cycleTheme()" title="Тема">🎨</button>
+            <button id="btn-connection" class="top-btn btn-connect" onclick="App.toggleConnection()">🔌 AZM</button>
+            
+			<div class="dropdown" style="display:inline-block; position:relative;">
+				<button id="btn-gnss" class="top-btn btn-gnss" onclick="App.toggleGNSSMenu()">📡 GNSS ▾</button>
+				<div id="gnss-dropdown" class="dropdown-menu" style="display:none; position:absolute; top:100%; right:0; z-index:300; min-width:180px;">
+					<div class="dropdown-item" onclick="App.connectExternalGNSS(); App.closeAllDropdowns();">🔌 Внешний (Serial)</div>
+					<div class="dropdown-item" onclick="App.startInternalGPS(); App.closeAllDropdowns();">📱 Внутренний</div>
+					<div class="dropdown-item" onclick="App.disconnectAllGNSS(); App.closeAllDropdowns();">✕ Отключить</div>
+				</div>
+			</div>
+			
+            <button id="btn-interrogation" class="top-btn btn-start" onclick="App.toggleInterrogation()" disabled>▶ Опрос</button>
+            <button id="btn-settings" class="top-btn btn-settings" onclick="App.openSettings()">⚙ Настройки</button>
+            
+            <div class="dropdown" style="display:inline-block; position:relative;">
+                <button class="top-btn btn-tools" onclick="App.toggleDropdown('tools-dropdown')">🔧 Инструменты ▾</button>
+                <div id="tools-dropdown" class="dropdown-menu" style="display:none; position:absolute; top:100%; right:0; z-index:300; min-width:200px;">
+                    <div class="dropdown-item" onclick="App.clearAllData(); App.closeAllDropdowns();">🗑 Очистить все данные</div>
+                    <div class="dropdown-item" onclick="App.solveAllBeacons(); App.closeAllDropdowns();">🎯 Решить все маяки</div>
+					<div class="dropdown-item" onclick="App.toggleEmulation(); App.closeAllDropdowns();">🎭 Эмуляция</div>
+					<div class="dropdown-item">📍 POI ▸<div class="submenu">
+						<div class="dropdown-item" onclick="App.loadPOI(); App.closeAllDropdowns();">📂 Загрузить из CSV</div>
+						<div class="dropdown-item" onclick="App.exportPOI_CSV(); App.closeAllDropdowns();">💾 Сохранить в CSV</div>
+						<div class="dropdown-item" onclick="App.clearPOI(); App.closeAllDropdowns();">🗑 Очистить все</div>
+					</div></div>
+                </div>
+            </div>
+            
+            <div class="dropdown" style="display:inline-block; position:relative;">
+                <button class="top-btn btn-export" onclick="App.toggleDropdown('export-dropdown')">📤 Экспорт ▾</button>
+                <div id="export-dropdown" class="dropdown-menu" style="display:none; position:absolute; top:100%; right:0; z-index:300; min-width:200px;">
+                    <div class="dropdown-item" onclick="App.exportStationTrackCSV(); App.closeAllDropdowns();">📊 CSV (Трек судна)</div>
+                    <div class="dropdown-item" onclick="App.exportMeasurementsCSV(); App.closeAllDropdowns();">📊 CSV (Измерения)</div>
+                    <div class="dropdown-item" onclick="App.exportSolutionsCSV(); App.closeAllDropdowns();">📊 CSV (Решения)</div>
+                    <div class="dropdown-item" onclick="App.exportKML(); App.closeAllDropdowns();">🗺 KML (Всё)</div>
+                </div>
+            </div>
+            
+            <div class="dropdown" style="display:inline-block; position:relative;">
+                <button class="top-btn btn-log" onclick="App.toggleDropdown('log-dropdown')">📋 Лог ▾</button>
+                <div id="log-dropdown" class="dropdown-menu" style="display:none; position:absolute; top:100%; right:0; z-index:300; min-width:170px;">
+                    <div class="dropdown-item" onclick="App.saveLog(); App.closeAllDropdowns();">💾 Сохранить</div>
+                    <div id="log-load-item" class="dropdown-item" onclick="App.loadLog(); App.closeAllDropdowns();">📂 Открыть</div>
+                    <div class="dropdown-item" onclick="App.showLogAnalysis(); App.closeAllDropdowns();">🔍 Анализ</div>
+                    <div id="log-play-item" class="dropdown-item" onclick="App.togglePlayback(); App.closeAllDropdowns();">▶ Воспроизвести</div>
+                    <div id="log-stop-item" class="dropdown-item" onclick="App.togglePlayback(); App.closeAllDropdowns();" style="display:none;">⏹ Остановить</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== КАРТА ===== -->
+        <div id="map-container">
+            <canvas id="map-canvas"></canvas>
+            
+            <!-- Информация -->
+            <div id="antenna-info">
+				<div><span class="ai-label">Широта:</span> <span class="ai-value" id="ai-lat">--</span></div>
+				<div><span class="ai-label">Долгота:</span> <span class="ai-value" id="ai-lon">--</span></div>
+				<div><span class="ai-label">Скорость:</span> <span class="ai-value" id="ai-spd">--</span> м/с</div>
+				<div><span class="ai-label">Курс:</span> <span class="ai-value" id="ai-crs">--</span>°</div>
+				<div><span class="ai-label">Глубина:</span> <span class="ai-value" id="ai-dpt">--</span> м</div>
+				<div><span class="ai-label">Темп.:</span> <span class="ai-value" id="ai-tmp">--</span>°C</div>
+			</div>
+            
+            <!-- Управление -->
+            <div id="tracks-control">
+                <button class="track-btn active" id="btn-auto-scale" onclick="App.toggleAutoScale()">📐 Авто-масштаб</button>
+				<button class="track-btn" id="btn-ruler" onclick="App.toggleRuler()">📏 Линейка</button>
+                <button class="track-btn" id="btn-clear-data" onclick="App.clearAllData()">🗑 Очистить</button>
+                <button class="track-btn" id="btn-solve" onclick="App.solveAllBeacons()">🎯 Решить</button>
+				
+                <div id="playback-progress" style="display:none; width:150px; height:4px; background:var(--bg-tertiary); border-radius:2px;">
+					<div id="playback-progress-fill" style="width:0%; height:100%; background:var(--btn-start); border-radius:2px;"></div>
+				</div>
+				<div id="playback-speed-control" style="display:none; margin-left:10px; align-items:center; gap:5px;">
+					<button id="btn-speed-down" class="track-btn" style="width:32px;">−</button>
+					<span id="playback-speed-current" style="background:var(--btn-start); color:var(--btn-text); padding:4px 10px; border-radius:4px; font-size:12px; font-weight:bold;">1x</span>
+					<button id="btn-speed-up" class="track-btn" style="width:32px;">+</button>
+				</div>
+            </div>
+
+            <!-- Шкала -->
+            <div id="scale-bar"></div>
+        </div>
+
+        <!-- ===== ПАНЕЛЬ МАЯКОВ ===== -->
+        <div id="beacons-bar" class="empty"></div>
+        
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://github.com/ucnl/AzimuthLBLX/" target="_blank" rel="noopener" class="footer-link">⭐ GitHub</a>
+                    <a href="https://docs.unavlab.com/" target="_blank" rel="noopener" class="footer-link">📖 Docs</a>
+                    <a href="LICENSE" target="_blank" rel="noopener" class="footer-link">⚖️ GNU GPL v3.0</a>
+                </div>
+                <div class="footer-info">
+                    <span class="footer-copy">&copy; 2026 UC&NL</span>
+                    <span class="footer-desc">VLBL Survey Tool</span>
+                    <span style="font-size:9px;">v<span id="app-version">--</span></span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО НАСТРОЕК ===== -->
+    <div id="settings-overlay">
+        <div id="settings-modal">
+            <div id="settings-header">
+                <h3>⚙ Настройки</h3>
+                <button onclick="App.closeSettings()" title="Закрыть">✕</button>
+            </div>
+            <div id="settings-body">
+                <!-- Параметры опроса -->
+                <div class="settings-section">
+                    <h4>📡 Параметры опроса</h4>
+                    <div class="settings-row">
+                        <label>Маска адресов:</label>
+                        <input type="number" id="cfg-mask" value="1" min="0" max="65535" onchange="App.onMaskChanged()">
+                    </div>
+                    <div id="addr-checkboxes"></div>
+                    <div class="settings-row">
+                        <label>Макс. дальность (м):</label>
+                        <input type="number" id="cfg-maxdist" value="1000" min="100" max="5000" step="50">
+                    </div>
+                    <div class="settings-row">
+                        <label>Солёность (PSU):</label>
+                        <input type="number" id="cfg-salinity" value="0.0" min="0" max="40" step="0.1">
+                    </div>
+                    <div class="settings-row">
+                        <label>Скорость звука (м/с):</label>
+                        <input type="number" id="cfg-soundspeed" placeholder="Авто" min="1300" max="1800" step="0.1">
+                    </div>
+                </div>
+                
+                <!-- GNSS -->
+                <div class="settings-section">
+                    <h4>📡 GNSS</h4>
+                    <div class="settings-row">
+                        <label>Скорость (бод):</label>
+                        <select id="cfg-gnss-baud" style="flex:1; padding:6px 8px; border:1px solid var(--border-primary); border-radius:4px; background:var(--bg-input); color:var(--text-primary); font-size:12px;">
+                            <option value="4800">4800</option>
+                            <option value="9600">9600</option>
+                            <option value="19200">19200</option>
+                            <option value="38400" selected>38400</option>
+                            <option value="57600">57600</option>
+                            <option value="115200">115200</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- VLBL -->
+                <div class="settings-section">
+                    <h4>🎯 VLBL</h4>
+                    <div class="settings-row">
+                        <label>Размер базы:</label>
+                        <input type="number" id="cfg-base-size" value="4" min="3" max="10" step="1">
+                    </div>
+                    <div class="settings-row">
+                        <label>Макс. измерений:</label>
+                        <input type="number" id="cfg-max-meas" value="200" min="10" max="1000" step="10">
+                    </div>
+                    <div class="settings-row">
+                        <label>Мин. дист. точек (м):</label>
+                        <input type="number" id="cfg-min-dist" value="1.0" min="0.1" max="50" step="0.1">
+                    </div>
+					<div class="settings-row">
+						<label>Авто-решение:</label>
+						<select id="cfg-auto-solve">
+							<option value="off">Выключено</option>
+							<option value="5">Каждые 5 точек</option>
+							<option value="10" selected>Каждые 10 точек</option>
+							<option value="20">Каждые 20 точек</option>
+							<option value="50">Каждые 50 точек</option>
+						</select>
+					</div>
+                </div>
+            </div>
+            <div id="settings-footer">
+                <button class="btn-apply" onclick="App.applySettings()">✓ Применить</button>
+                <button class="btn-close-settings" onclick="App.closeSettings()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== СКРИПТЫ ===== -->
+    <script src="log-storage.js"></script>
+    <script src="logger.js"></script>
+    <script src="log-analyzer.js"></script>
+    <script src="geo-utils.js"></script>
+    <script src="vincenty.js"></script>
+    <script src="haversine.js"></script>
+    <script src="median.js"></script>
+    <script src="smoother.js"></script>
+    <script src="sound-speed.js"></script>
+    <script src="gnss-parser.js"></script>
+    <script src="azm-parser.js"></script>
+    <script src="webview-stub.js"></script>
+    <script src="serial-bridge.js"></script>
+    <script src="vlbl-solver.js"></script>
+    <script src="vlbl-measurements.js"></script>
+    <script src="measurements-store.js"></script>
+	<script src="poi-manager.js"></script>
+    <script src="vlbl-manager.js"></script>
+    <script src="export.js"></script>
+    <script src="modules/ui-themes.js"></script>
+    <script src="modules/ui-settings.js"></script>
+    <script src="modules/ui-canvas.js"></script>
+    <script src="modules/ui-vlbl.js"></script>
+	<script src="modules/ui-ruler.js"></script>
+	<script src="emulator.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
