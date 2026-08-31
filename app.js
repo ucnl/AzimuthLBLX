@@ -520,11 +520,6 @@ const App = (() => {
 	}
 
 	function startInternalGPS() {
-		if (!navigator.geolocation) {
-			setStatus('❌ Геолокация недоступна');
-			return;
-		}
-		
 		// Останавливаем внешний GNSS если был
 		if (isGnssConnected) {
 			disconnectGNSS();
@@ -533,30 +528,17 @@ const App = (() => {
 		// Останавливаем предыдущее слежение если было
 		if (internalGNSSWatchId !== null) {
 			navigator.geolocation.clearWatch(internalGNSSWatchId);
+			internalGNSSWatchId = null;
 		}
 		
 		setStatus('📱 Внутренний GNSS запущен');
 		
-		internalGNSSWatchId = navigator.geolocation.watchPosition(
-			(pos) => {
-				VLBLManager.getState().currentLat = pos.coords.latitude;
-				VLBLManager.getState().currentLon = pos.coords.longitude;
-				VLBLManager.getState().speedMps = pos.coords.speed || 0;
-				VLBLManager.getState().courseDeg = pos.coords.heading || NaN;
-				
-				MeasurementsStore.addStationPoint(pos.coords.latitude, pos.coords.longitude, new Date());
-				updateAntennaInfoUI();
-				updateGNSSButton();
-			},
-			(err) => {
-				setStatus('❌ Ошибка GNSS: ' + err.message);
-			},
-			{
-				enableHighAccuracy: true,
-				timeout: 30000,
-				maximumAge: 5000,
-			}
-		);
+		// Запускаем нативный GPS через WebView
+		const iframe = document.createElement('iframe');
+		iframe.style.display = 'none';
+		iframe.src = 'app://start_gps';
+		document.body.appendChild(iframe);
+		setTimeout(() => document.body.removeChild(iframe), 100);
 		
 		updateGNSSButton();
 	}
@@ -565,9 +547,17 @@ const App = (() => {
 		if (internalGNSSWatchId !== null) {
 			navigator.geolocation.clearWatch(internalGNSSWatchId);
 			internalGNSSWatchId = null;
-			setStatus('📱 Внутренний GNSS остановлен');
-			updateGNSSButton();
 		}
+		
+		// Отправляем команду остановки нативного GPS
+		const iframe = document.createElement('iframe');
+		iframe.style.display = 'none';
+		iframe.src = 'app://stop_gps';
+		document.body.appendChild(iframe);
+		setTimeout(() => document.body.removeChild(iframe), 100);
+		
+		setStatus('📱 Внутренний GNSS остановлен');
+		updateGNSSButton();
 	}
 
 	function disconnectAllGNSS() {
