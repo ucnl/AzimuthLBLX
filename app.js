@@ -115,7 +115,19 @@ const App = (() => {
 		initVLBLWorker();
 
         window.addEventListener('resize', () => UICanvas.resizeCanvas());
+		window.addEventListener('native-gnss-update', () => {
+			if (window._nativeGNSS) {
+				const g = window._nativeGNSS;
+				VLBLManager.getState().currentLat = g.lat;
+				VLBLManager.getState().currentLon = g.lon;
+				VLBLManager.getState().speedMps = g.speed || 0;
+				VLBLManager.getState().courseDeg = g.course || NaN;
+				MeasurementsStore.addStationPoint(g.lat, g.lon, new Date());
+				updateAntennaInfoUI();
+			}
+		});
         initMouseHandlers();
+		initTouchHandlers();
         loadSettings();
 
         document.addEventListener('click', function(e) {
@@ -1216,6 +1228,54 @@ const App = (() => {
             setStatus('Вид сброшен');
         });
     }
+
+	function initTouchHandlers() {
+		let initDist = 0, initScale = 1;
+		let lastTouchTime = 0;
+
+		canvas.addEventListener('touchstart', (e) => {
+			e.preventDefault();
+			
+			if (e.touches.length === 1) {
+				UICanvas.setDraggingEnabled(true);
+				lastMouseX = e.touches[0].clientX;
+				lastMouseY = e.touches[0].clientY;
+			} else if (e.touches.length === 2) {
+				UICanvas.setDraggingEnabled(false);
+				const dx = e.touches[0].clientX - e.touches[1].clientX;
+				const dy = e.touches[0].clientY - e.touches[1].clientY;
+				initDist = Math.sqrt(dx * dx + dy * dy);
+				initScale = UICanvas.getScale();
+			}
+		});
+
+		canvas.addEventListener('touchmove', (e) => {
+			e.preventDefault();
+			if (e.touches.length === 1 && UICanvas.isDraggingEnabled()) {
+				const dx = e.touches[0].clientX - lastMouseX;
+				const dy = e.touches[0].clientY - lastMouseY;
+				UICanvas.updateFromInteraction(dx, dy);
+				lastMouseX = e.touches[0].clientX;
+				lastMouseY = e.touches[0].clientY;
+				updateAutoScaleButton();
+			} else if (e.touches.length === 2) {
+				const dx = e.touches[0].clientX - e.touches[1].clientX;
+				const dy = e.touches[0].clientY - e.touches[1].clientY;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				if (initDist > 0) {
+					const newScale = initScale * (dist / initDist);
+					UICanvas.setScale(newScale);
+					UICanvas.setAutoScaleEnabled(false);
+					updateAutoScaleButton();
+				}
+			}
+		});
+
+		canvas.addEventListener('touchend', (e) => {
+			e.preventDefault();
+			UICanvas.setDraggingEnabled(false);
+		});
+	}
 
     // ========== ПУБЛИЧНЫЙ API ==========
 
