@@ -143,6 +143,37 @@ const UICanvas = (() => {
         ctx.strokeStyle = cc.stroke;
         ctx.lineWidth = 2;
         ctx.stroke();
+		
+		const st = VLBLManager ? VLBLManager.getState() : null;
+		if (st && !isNaN(st.antennaHeadingDeg) && track.length > 0) {
+			const lastPoint = track[track.length - 1];
+			const lastScreen = geoToScreen(lastPoint.lat, lastPoint.lon, anchor.lat, anchor.lon);
+			
+			// Рисуем стрелку направления
+			const headingRad = (st.antennaHeadingDeg - 90) * Math.PI / 180; // -90 потому что 0° = север (вверх)
+			const arrowLength = 30; // пикселей
+			
+			const endX = lastScreen.x + Math.cos(headingRad) * arrowLength;
+			const endY = lastScreen.y + Math.sin(headingRad) * arrowLength;
+			
+			ctx.strokeStyle = '#00ffff';
+			ctx.lineWidth = 3;
+			ctx.beginPath();
+			ctx.moveTo(lastScreen.x, lastScreen.y);
+			ctx.lineTo(endX, endY);
+			ctx.stroke();
+			
+			// Наконечник стрелки
+			const arrowSize = 8;
+			const angle = Math.atan2(endY - lastScreen.y, endX - lastScreen.x);
+			ctx.beginPath();
+			ctx.moveTo(endX, endY);
+			ctx.lineTo(endX - arrowSize * Math.cos(angle - Math.PI / 6), endY - arrowSize * Math.sin(angle - Math.PI / 6));
+			ctx.lineTo(endX - arrowSize * Math.cos(angle + Math.PI / 6), endY - arrowSize * Math.sin(angle + Math.PI / 6));
+			ctx.closePath();
+			ctx.fillStyle = '#00ffff';
+			ctx.fill();
+		}
     }
 
     // ========== ОТРИСОВКА ИЗМЕРЕНИЙ ==========

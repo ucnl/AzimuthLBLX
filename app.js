@@ -24,6 +24,7 @@ const App = (() => {
     let isGnssConnected = false;
 	
 	let internalGNSSWatchId = null;
+	let hasExternalHeading = false;
 		
 	let vlblWorker = null;
 	let solveRequestCounter = 0;
@@ -126,6 +127,18 @@ const App = (() => {
 				updateAntennaInfoUI();
 			}
 		});
+		window.addEventListener('native-compass-update', () => {
+			if (window._nativeCompass) {
+				const heading = window._nativeCompass.heading;
+				// Обновляем heading только если нет внешнего GNSS с компасом
+				if (!isGnssConnected || !hasExternalHeading) {
+					VLBLManager.getState().antennaHeadingDeg = heading;
+					updateAntennaInfoUI();
+				}
+			}
+		});
+		
+		
         initMouseHandlers();
 		initTouchHandlers();
         loadSettings();
@@ -482,6 +495,7 @@ const App = (() => {
             gnssBridge = null;
         }
         isGnssConnected = false;
+		hasExternalHeading = false;
         updateAllButtons();
 		updateGNSSButton();
     }
@@ -503,7 +517,22 @@ const App = (() => {
             // Добавляем в трек судна
             MeasurementsStore.addStationPoint(data.latitude, data.longitude, new Date());
             updateAntennaInfoUI();
-        }
+        } else if (data.type === 'hdt' && !isNaN(data.heading)) {
+			// Внешний компас (True Heading)
+			VLBLManager.getState().antennaHeadingDeg = data.heading;
+			hasExternalHeading = true;
+			updateAntennaInfoUI();
+		} else if (data.type === 'hdg' && !isNaN(data.heading)) {
+			// Внешний компас (Heading with deviation)
+			VLBLManager.getState().antennaHeadingDeg = data.heading;
+			hasExternalHeading = true;
+			updateAntennaInfoUI();
+		} else if (data.type === 'hdm' && !isNaN(data.heading)) {
+			// Внешний компас (Magnetic Heading)
+			VLBLManager.getState().antennaHeadingDeg = data.heading;
+			hasExternalHeading = true;
+			updateAntennaInfoUI();
+		}
     }
 
 
@@ -1118,10 +1147,11 @@ const App = (() => {
 
     // ========== UI ОБНОВЛЕНИЯ ==========
 
-    function updateAntennaInfoUI() {
+	function updateAntennaInfoUI() {
 		const st = VLBLManager.getState();		
 		document.getElementById('ai-lat').textContent = !isNaN(st.currentLat) ? st.currentLat.toFixed(6) : '--';
 		document.getElementById('ai-lon').textContent = !isNaN(st.currentLon) ? st.currentLon.toFixed(6) : '--';
+		document.getElementById('ai-hdg').textContent = !isNaN(st.antennaHeadingDeg) ? st.antennaHeadingDeg.toFixed(1) : '--';
 		document.getElementById('ai-spd').textContent = !isNaN(st.speedMps) ? st.speedMps.toFixed(2) : '--';
 		document.getElementById('ai-crs').textContent = !isNaN(st.courseDeg) ? st.courseDeg.toFixed(1) : '--';
 		document.getElementById('ai-dpt').textContent = !isNaN(st.antennaDepthM) ? st.antennaDepthM.toFixed(1) : '--';

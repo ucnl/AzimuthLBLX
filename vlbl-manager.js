@@ -20,6 +20,7 @@ const VLBLManager = (() => {
         antennaDepthM: NaN,
         waterTempC: NaN,
         pressureMBar: NaN,
+		antennaHeadingDeg: NaN,
         isInterrogationActive: false,
         isDeviceInfoValid: false,
         deviceType: 0,
