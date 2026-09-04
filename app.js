@@ -3,7 +3,7 @@
 
 const App = (() => {
 
-    const APP_VERSION = '0.1.0';
+    const APP_VERSION = '1.0.0';
 
     // ========== DOM-ЭЛЕМЕНТЫ ==========
     let canvas, ctx;
@@ -1205,6 +1205,161 @@ const App = (() => {
 		UIRuler.toggle();
 	}
 
+
+	// ========== LBL SOLVER CONFIG ==========
+
+	function openLBLSolver() {
+		if (!isConnected || !serialBridge) {
+			alert('Подключитесь к Zima2 LBL');
+			return;
+		}
+		document.getElementById('lblsolver-overlay').classList.add('visible');
+		loadLBLSolverSettings();
+	}
+
+	function closeLBLSolver() {
+		document.getElementById('lblsolver-overlay').classList.remove('visible');
+	}
+
+	function loadLBLSolverSettings() {
+		// Загружаем сохранённые настройки LBL решателя
+		try {
+			const saved = localStorage.getItem('lblsolver_settings');
+			if (saved) {
+				const data = JSON.parse(saved);
+				// Применяем к полям
+				document.getElementById('lblsolver-auto-output').value = data.autoOutput || '0';
+				document.getElementById('lblsolver-autostart').value = data.autostart || '0';
+				document.getElementById('lblsolver-salinity').value = data.salinity || 0;
+				document.getElementById('lblsolver-sos').value = data.sos || '';
+				document.getElementById('lblsolver-smflt-size').value = data.smfltSize || 4;
+				document.getElementById('lblsolver-smflt-thld').value = data.smfltThld || 100;
+				document.getElementById('lblsolver-achod-size').value = data.achodSize || 8;
+				document.getElementById('lblsolver-achod-mspd').value = data.achodMspd || 0.5;
+				document.getElementById('lblsolver-achod-thld').value = data.achodThld || 5;
+				document.getElementById('lblsolver-rerr').value = data.rerr || 25;
+			}
+		} catch (e) {}
+	}
+
+	function saveLBLSolverSettings() {
+		const data = {
+			autoOutput: document.getElementById('lblsolver-auto-output').value,
+			autostart: document.getElementById('lblsolver-autostart').value,
+			salinity: document.getElementById('lblsolver-salinity').value,
+			sos: document.getElementById('lblsolver-sos').value,
+			smfltSize: document.getElementById('lblsolver-smflt-size').value,
+			smfltThld: document.getElementById('lblsolver-smflt-thld').value,
+			achodSize: document.getElementById('lblsolver-achod-size').value,
+			achodMspd: document.getElementById('lblsolver-achod-mspd').value,
+			achodThld: document.getElementById('lblsolver-achod-thld').value,
+			rerr: document.getElementById('lblsolver-rerr').value,
+		};
+		try {
+			localStorage.setItem('lblsolver_settings', JSON.stringify(data));
+		} catch (e) {}
+	}
+
+	function loadSolvedBeaconsToLBLSolver() {
+		// Загружаем решения VLBL в поля маяков
+		const solutions = MeasurementsStore.getSolutions();
+		const solvedBeacons = Object.keys(solutions).filter(addr => solutions[addr] && solutions[addr].latDeg);
+		
+		if (solvedBeacons.length === 0) {
+			alert('Нет решённых маяков. Сначала выполните VLBL решение.');
+			return;
+		}
+		
+		// Берём первые 4 решённых маяка
+		const beaconInputs = [
+			{ addr: 'lblsolver-a1', ln: 'lblsolver-ln1', lt: 'lblsolver-lt1' },
+			{ addr: 'lblsolver-a2', ln: 'lblsolver-ln2', lt: 'lblsolver-lt2' },
+			{ addr: 'lblsolver-a3', ln: 'lblsolver-ln3', lt: 'lblsolver-lt3' },
+			{ addr: 'lblsolver-a4', ln: 'lblsolver-ln4', lt: 'lblsolver-lt4' },
+		];
+		
+		for (let i = 0; i < Math.min(4, solvedBeacons.length); i++) {
+			const addr = solvedBeacons[i];
+			const solution = solutions[addr];
+			const inputs = beaconInputs[i];
+			
+			document.getElementById(inputs.addr).value = parseInt(addr);
+			document.getElementById(inputs.ln).value = solution.lonDeg.toFixed(6);
+			document.getElementById(inputs.lt).value = solution.latDeg.toFixed(6);
+		}
+		
+		setStatus('Координаты маяков загружены из решений');
+	}
+
+	function sendLBLSolverConfig() {
+		if (!serialBridge || !isConnected) {
+			alert('Нет подключения к Zima2');
+			return;
+		}
+		
+		// Собираем команду $PAZMA
+		const autoOutput = document.getElementById('lblsolver-auto-output').value;
+		const autostart = document.getElementById('lblsolver-autostart').value;
+		const salinity = document.getElementById('lblsolver-salinity').value;
+		const sos = document.getElementById('lblsolver-sos').value || '';
+		const smfltSize = document.getElementById('lblsolver-smflt-size').value;
+		const smfltThld = document.getElementById('lblsolver-smflt-thld').value;
+		const achodSize = document.getElementById('lblsolver-achod-size').value;
+		const achodMspd = document.getElementById('lblsolver-achod-mspd').value;
+		const achodThld = document.getElementById('lblsolver-achod-thld').value;
+		const rerr = document.getElementById('lblsolver-rerr').value;
+		
+		// Маяки
+		const a1 = document.getElementById('lblsolver-a1').value;
+		const ln1 = document.getElementById('lblsolver-ln1').value || '';
+		const lt1 = document.getElementById('lblsolver-lt1').value || '';
+		
+		const a2 = document.getElementById('lblsolver-a2').value;
+		const ln2 = document.getElementById('lblsolver-ln2').value || '';
+		const lt2 = document.getElementById('lblsolver-lt2').value || '';
+		
+		const a3 = document.getElementById('lblsolver-a3').value;
+		const ln3 = document.getElementById('lblsolver-ln3').value || '';
+		const lt3 = document.getElementById('lblsolver-lt3').value || '';
+		
+		const a4 = document.getElementById('lblsolver-a4').value;
+		const ln4 = document.getElementById('lblsolver-ln4').value || '';
+		const lt4 = document.getElementById('lblsolver-lt4').value || '';
+		
+		// Формируем строку команды
+		let params = [
+			autoOutput,
+			autostart,
+			salinity,
+			sos,
+			smfltSize,
+			smfltThld,
+			achodSize,
+			achodMspd,
+			achodThld,
+			rerr,
+			a1, ln1, lt1,
+			a2, ln2, lt2,
+			a3, ln3, lt3,
+		];
+		
+		// Добавляем маяк 4 только если заданы координаты
+		if (ln4 && lt4) {
+			params.push(a4, ln4, lt4);
+		}
+		
+		const cmd = '$PAZMA,' + params.join(',') + '*00\r\n';
+		
+		Logger.logOutgoing('AZM', cmd.trim());
+		serialBridge.send(cmd);
+		
+		// Сохраняем настройки
+		saveLBLSolverSettings();
+		
+		setStatus('Конфигурация LBL решателя отправлена');
+	}
+
+
     // ========== МЫШЬ ==========
 
     function initMouseHandlers() {
@@ -1344,6 +1499,10 @@ const App = (() => {
 		startInternalGPS,
 		stopInternalGPS,
 		disconnectAllGNSS,
+		openLBLSolver,
+		closeLBLSolver,
+		loadSolvedBeaconsToLBLSolver,
+		sendLBLSolverConfig,
     };
 })();
 

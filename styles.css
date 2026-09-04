@@ -1141,6 +1141,143 @@ body {
     background: rgba(255, 255, 255, 0.15);
 }
 
+/* LBL Solver Config — специфичные стили */
+#lblsolver-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 200;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+}
+#lblsolver-overlay.visible { display: flex; }
+
+#lblsolver-modal {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    width: 480px;
+    max-width: 95vw;
+    height: 85vh;                    /* Фиксированная высота */
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+}
+
+/* Шапка — фиксированная */
+#lblsolver-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 2px solid var(--border-primary);
+    flex-shrink: 0;                  /* Не сжимается */
+}
+#lblsolver-header h3 {
+    margin: 0;
+    color: var(--text-accent);
+    font-size: 16px;
+}
+#lblsolver-header button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+#lblsolver-header button:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); }
+
+/* Тело — скроллируемое */
+#lblsolver-body {
+    padding: 16px 20px;
+    overflow-y: auto;                /* Скролл */
+    flex: 1;
+}
+#lblsolver-body::-webkit-scrollbar { width: 5px; }
+#lblsolver-body::-webkit-scrollbar-track { background: transparent; }
+#lblsolver-body::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 3px; }
+
+/* Футер — фиксированный */
+#lblsolver-footer {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-primary);
+    flex-shrink: 0;                  /* Не сжимается */
+}
+
+/* Конфигурация маяка */
+.beacon-config-row {
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+}
+
+.beacon-config-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.beacon-config-label {
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 13px;
+    color: var(--text-accent);
+}
+
+.beacon-addr-input {
+    width: 50px;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: 'Consolas', monospace;
+}
+
+.beacon-config-coords {
+    display: flex;
+    gap: 8px;
+}
+
+.beacon-config-coords input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: 'Consolas', monospace;
+    min-width: 0;
+}
+
+.beacon-config-coords input:focus {
+    outline: none;
+    border-color: var(--text-accent);
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+    #lblsolver-modal {
+        width: 100%;
+        height: 90vh;
+        border-radius: 0;
+    }
+}
+
+
 
 /* ========== АДАПТИВНОСТЬ ========== */
 @media (max-width: 768px) {

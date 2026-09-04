@@ -38,7 +38,8 @@
                     <div class="dropdown-item" onclick="App.clearAllData(); App.closeAllDropdowns();">🗑 Очистить все данные</div>
                     <div class="dropdown-item" onclick="App.solveAllBeacons(); App.closeAllDropdowns();">🎯 Решить все маяки</div>
 					<div class="dropdown-item" onclick="App.toggleEmulation(); App.closeAllDropdowns();">🎭 Эмуляция</div>
-					<div class="dropdown-item">📍 POI ▸<div class="submenu">
+					<div class="dropdown-item" onclick="App.openLBLSolver(); App.closeAllDropdowns();">📟 Программирование LBL решателя</div>
+					<div class="dropdown-item">📍 POI ▸<div class="submenu">					
 						<div class="dropdown-item" onclick="App.loadPOI(); App.closeAllDropdowns();">📂 Загрузить из CSV</div>
 						<div class="dropdown-item" onclick="App.exportPOI_CSV(); App.closeAllDropdowns();">💾 Сохранить в CSV</div>
 						<div class="dropdown-item" onclick="App.clearPOI(); App.closeAllDropdowns();">🗑 Очистить все</div>
@@ -203,6 +204,137 @@
             </div>
         </div>
     </div>
+
+	<!-- ===== МОДАЛЬНОЕ ОКНО: LBL SOLVER CONFIG ===== -->
+	<div id="lblsolver-overlay">
+		<div id="lblsolver-modal">
+			<div id="lblsolver-header">
+				<h3>🌐 Программирование LBL решателя</h3>
+				<button onclick="App.closeLBLSolver()" title="Закрыть">✕</button>
+			</div>
+			<div id="lblsolver-body">
+				
+				<!-- Настройки решателя -->
+				<div class="settings-section">
+					<h4>⚙ Настройки решателя</h4>
+					
+					<div class="settings-row">
+						<label>Автовывод NMEA:</label>
+						<select id="lblsolver-auto-output" style="flex:1; padding:6px 8px; border:1px solid var(--border-primary); border-radius:4px; background:var(--bg-input); color:var(--text-primary); font-size:12px;">
+							<option value="0">Выключен</option>
+							<option value="1">Включен</option>
+						</select>
+					</div>
+					
+					<div class="settings-row">
+						<label>Автозапуск:</label>
+						<select id="lblsolver-autostart" style="flex:1; padding:6px 8px; border:1px solid var(--border-primary); border-radius:4px; background:var(--bg-input); color:var(--text-primary); font-size:12px;">
+							<option value="0">Выключен</option>
+							<option value="1">Включен</option>
+						</select>
+					</div>
+					
+					<div class="settings-row">
+						<label>Солёность (PSU):</label>
+						<input type="number" id="lblsolver-salinity" value="0.0" min="0" max="40" step="0.1">
+					</div>
+					
+					<div class="settings-row">
+						<label>Скорость звука (м/с):</label>
+						<input type="number" id="lblsolver-sos" placeholder="Авто" min="1300" max="1800" step="0.1">
+					</div>
+					
+					<div class="settings-row">
+						<label>Фильтр (размер):</label>
+						<input type="number" id="lblsolver-smflt-size" value="4" min="0" max="32" step="1">
+					</div>
+					
+					<div class="settings-row">
+						<label>Фильтр (порог, м):</label>
+						<input type="number" id="lblsolver-smflt-thld" value="100" min="1" max="999" step="1">
+					</div>
+					
+					<div class="settings-row">
+						<label>ACHOD (размер):</label>
+						<input type="number" id="lblsolver-achod-size" value="8" min="0" max="32" step="1">
+					</div>
+					
+					<div class="settings-row">
+						<label>ACHOD (м/с):</label>
+						<input type="number" id="lblsolver-achod-mspd" value="0.5" min="0.5" max="10" step="0.1">
+					</div>
+					
+					<div class="settings-row">
+						<label>ACHOD (порог, м):</label>
+						<input type="number" id="lblsolver-achod-thld" value="5" min="0.5" max="25" step="0.5">
+					</div>
+					
+					<div class="settings-row">
+						<label>Порог ошибки (м):</label>
+						<input type="number" id="lblsolver-rerr" value="25" min="0.5" max="100" step="0.5">
+					</div>
+				</div>
+				
+				<!-- Маяки -->
+				<div class="settings-section">
+					<h4>📍 Маяки (минимум 3)</h4>
+					
+					<!-- Маяк 1 -->
+					<div class="beacon-config-row">
+						<div class="beacon-config-header">
+							<span class="beacon-config-label">Маяк 1:</span>
+							<input type="number" id="lblsolver-a1" class="beacon-addr-input" value="0" min="0" max="15" step="1">
+						</div>
+						<div class="beacon-config-coords">
+							<input type="number" id="lblsolver-ln1" placeholder="Долгота" step="0.000001">
+							<input type="number" id="lblsolver-lt1" placeholder="Широта" step="0.000001">
+						</div>
+					</div>
+					
+					<!-- Маяк 2 -->
+					<div class="beacon-config-row">
+						<div class="beacon-config-header">
+							<span class="beacon-config-label">Маяк 2:</span>
+							<input type="number" id="lblsolver-a2" class="beacon-addr-input" value="1" min="0" max="15" step="1">
+						</div>
+						<div class="beacon-config-coords">
+							<input type="number" id="lblsolver-ln2" placeholder="Долгота" step="0.000001">
+							<input type="number" id="lblsolver-lt2" placeholder="Широта" step="0.000001">
+						</div>
+					</div>
+					
+					<!-- Маяк 3 -->
+					<div class="beacon-config-row">
+						<div class="beacon-config-header">
+							<span class="beacon-config-label">Маяк 3:</span>
+							<input type="number" id="lblsolver-a3" class="beacon-addr-input" value="2" min="0" max="15" step="1">
+						</div>
+						<div class="beacon-config-coords">
+							<input type="number" id="lblsolver-ln3" placeholder="Долгота" step="0.000001">
+							<input type="number" id="lblsolver-lt3" placeholder="Широта" step="0.000001">
+						</div>
+					</div>
+					
+					<!-- Маяк 4 -->
+					<div class="beacon-config-row">
+						<div class="beacon-config-header">
+							<span class="beacon-config-label">Маяк 4 (опц.):</span>
+							<input type="number" id="lblsolver-a4" class="beacon-addr-input" value="3" min="0" max="15" step="1">
+						</div>
+						<div class="beacon-config-coords">
+							<input type="number" id="lblsolver-ln4" placeholder="Долгота (пусто = нет)" step="0.000001">
+							<input type="number" id="lblsolver-lt4" placeholder="Широта (пусто = нет)" step="0.000001">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="lblsolver-footer">
+				<button class="btn-apply" onclick="App.loadSolvedBeaconsToLBLSolver()">📋 Из решений</button>
+				<button class="btn-apply" onclick="App.sendLBLSolverConfig()">📤 Отправить</button>
+				<button class="btn-close-settings" onclick="App.closeLBLSolver()">Закрыть</button>
+			</div>
+		</div>
+	</div>
 
     <!-- ===== СКРИПТЫ ===== -->
     <script src="log-storage.js"></script>
