@@ -34,6 +34,9 @@ const App = (() => {
 	let autoSolveMinIntervalMs = 3000; // минимальный интервал между решениями
 	let lastAutoSolveTime = {};
 	let lastAutoSolveCount = {};
+	
+	let lblSolverPending = false;
+	let lblSolverTimeout = null;
 		
 	const PLAYBACK_SPEEDS = [1, 2, 4, 8]; 
 
