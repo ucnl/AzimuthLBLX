@@ -84,14 +84,7 @@ const App = (() => {
         LogStorage.open().catch(e => console.warn('IndexedDB:', e));
         console.log('[App] Инициализация...');
 		
-		// Регистрация Service Worker (только не для file://)
-		if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-			navigator.serviceWorker.register('./sw.js')
-				.then(() => console.log('[App] Service Worker зарегистрирован'))
-				.catch((err) => console.warn('[App] Service Worker:', err.message));
-		} else {
-			console.log('[App] Service Worker отключён (file:// или не поддерживается)');
-		}
+		
 
 		// Проверка поддержки Web Serial API
 		if (!navigator.serial) {
