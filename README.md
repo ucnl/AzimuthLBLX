@@ -177,6 +177,7 @@ $PAZMA,[auto_output],[autostart],[salinity],[sos],[sos_auto],[smflt_size],[smflt
 ```
 
 | Параметр | Описание |
+| :--- | :--- |
 | auto_output | 0/1 — автовывод NMEA |
 | autostart | 0/1 — автозапуск LBL при включении |
 | salinity | Солёность (PSU) |
@@ -214,10 +215,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/
 
 ## Ссылки
+
 UC&NL — https://unavlab.com
 Документация — https://docs.unavlab.com
 GitHub Issues — https://github.com/ucnl/AzimuthLBLX/issues
 
+
 ---
+
 
 © 2026 UC&NL | hello@unavlab.com
