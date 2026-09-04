@@ -3,7 +3,7 @@
 
 const App = (() => {
 
-    const APP_VERSION = '0.2.0';
+    const APP_VERSION = '0.2.1';
 
     // ========== DOM-ЭЛЕМЕНТЫ ==========
     let canvas, ctx;
@@ -80,6 +80,30 @@ const App = (() => {
         document.getElementById('app-version').textContent = APP_VERSION;
         LogStorage.open().catch(e => console.warn('IndexedDB:', e));
         console.log('[App] Инициализация...');
+		
+		// Регистрация Service Worker (только не для file://)
+		if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+			navigator.serviceWorker.register('./sw.js')
+				.then(() => console.log('[App] Service Worker зарегистрирован'))
+				.catch((err) => console.warn('[App] Service Worker:', err.message));
+		} else {
+			console.log('[App] Service Worker отключён (file:// или не поддерживается)');
+		}
+
+		// Проверка поддержки Web Serial API
+		if (!navigator.serial) {
+			console.warn('[App] Web Serial API не поддерживается');
+			setStatus('Web Serial API недоступен');
+			if (btnConnection) btnConnection.disabled = true;
+		} else {
+			console.log('[App] Web Serial API доступен');
+		}
+		
+		
+		
+		
+		
+		
 
         canvas = document.getElementById('map-canvas');
         ctx = canvas.getContext('2d');
