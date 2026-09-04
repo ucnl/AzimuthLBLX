@@ -3,7 +3,7 @@
 
 const App = (() => {
 
-    const APP_VERSION = '1.0.0';
+    const APP_VERSION = '0.2.0';
 
     // ========== DOM-ЭЛЕМЕНТЫ ==========
     let canvas, ctx;
@@ -368,6 +368,40 @@ const App = (() => {
     function onSerialMessage(rawLine) {
         const line = rawLine.trim();
         Logger.logIncoming('AZM', line);
+		
+		if (lblSolverPending) {
+			if (line.startsWith('$PAZMA,')) {
+				// Устройство вернуло конфигурацию
+				lblSolverPending = false;
+				if (lblSolverTimeout) {
+					clearTimeout(lblSolverTimeout);
+					lblSolverTimeout = null;
+				}
+				setStatus('✓ Конфигурация LBL решателя применена');
+				closeLBLSolver();
+				return;
+			}
+			
+			if (line.startsWith('$PAZM0,')) {
+				// ACK с ошибкой
+				const ack = AZMParser.parse(line);
+				if (ack && ack.type === 'ack') {
+					lblSolverPending = false;
+					if (lblSolverTimeout) {
+						clearTimeout(lblSolverTimeout);
+						lblSolverTimeout = null;
+					}
+					
+					if (ack.result === 0) {
+						setStatus('✓ OK');
+					} else {
+						setStatus('✗ Ошибка: код ' + ack.result);
+					}
+					return;
+				}
+			}
+		}
+			
 
         const result = VLBLManager.processRawLine(line);
         if (!result) return;
@@ -1297,66 +1331,59 @@ const App = (() => {
 			return;
 		}
 		
-		// Собираем команду $PAZMA
-		const autoOutput = document.getElementById('lblsolver-auto-output').value;
-		const autostart = document.getElementById('lblsolver-autostart').value;
-		const salinity = document.getElementById('lblsolver-salinity').value;
-		const sos = document.getElementById('lblsolver-sos').value || '';
-		const smfltSize = document.getElementById('lblsolver-smflt-size').value;
-		const smfltThld = document.getElementById('lblsolver-smflt-thld').value;
-		const achodSize = document.getElementById('lblsolver-achod-size').value;
-		const achodMspd = document.getElementById('lblsolver-achod-mspd').value;
-		const achodThld = document.getElementById('lblsolver-achod-thld').value;
-		const rerr = document.getElementById('lblsolver-rerr').value;
+		// Собираем конфигурацию
+		const config = {
+			autoOutput: document.getElementById('lblsolver-auto-output').value,
+			autostart: document.getElementById('lblsolver-autostart').value,
+			salinity: document.getElementById('lblsolver-salinity').value,
+			sos: document.getElementById('lblsolver-sos').value || '',
+			sosAuto: '',  // Пусто = устройство само решит
+			smfltSize: document.getElementById('lblsolver-smflt-size').value,
+			smfltThld: document.getElementById('lblsolver-smflt-thld').value,
+			achodSize: document.getElementById('lblsolver-achod-size').value,
+			achodMspd: document.getElementById('lblsolver-achod-mspd').value,
+			achodThld: document.getElementById('lblsolver-achod-thld').value,
+			rerr: document.getElementById('lblsolver-rerr').value,
+			a1: document.getElementById('lblsolver-a1').value,
+			ln1: document.getElementById('lblsolver-ln1').value || '',
+			lt1: document.getElementById('lblsolver-lt1').value || '',
+			a2: document.getElementById('lblsolver-a2').value,
+			ln2: document.getElementById('lblsolver-ln2').value || '',
+			lt2: document.getElementById('lblsolver-lt2').value || '',
+			a3: document.getElementById('lblsolver-a3').value,
+			ln3: document.getElementById('lblsolver-ln3').value || '',
+			lt3: document.getElementById('lblsolver-lt3').value || '',
+		};
 		
-		// Маяки
-		const a1 = document.getElementById('lblsolver-a1').value;
-		const ln1 = document.getElementById('lblsolver-ln1').value || '';
-		const lt1 = document.getElementById('lblsolver-lt1').value || '';
-		
-		const a2 = document.getElementById('lblsolver-a2').value;
-		const ln2 = document.getElementById('lblsolver-ln2').value || '';
-		const lt2 = document.getElementById('lblsolver-lt2').value || '';
-		
-		const a3 = document.getElementById('lblsolver-a3').value;
-		const ln3 = document.getElementById('lblsolver-ln3').value || '';
-		const lt3 = document.getElementById('lblsolver-lt3').value || '';
-		
+		// Маяк 4 — только если координаты заданы
 		const a4 = document.getElementById('lblsolver-a4').value;
 		const ln4 = document.getElementById('lblsolver-ln4').value || '';
 		const lt4 = document.getElementById('lblsolver-lt4').value || '';
 		
-		// Формируем строку команды
-		let params = [
-			autoOutput,
-			autostart,
-			salinity,
-			sos,
-			smfltSize,
-			smfltThld,
-			achodSize,
-			achodMspd,
-			achodThld,
-			rerr,
-			a1, ln1, lt1,
-			a2, ln2, lt2,
-			a3, ln3, lt3,
-		];
-		
-		// Добавляем маяк 4 только если заданы координаты
 		if (ln4 && lt4) {
-			params.push(a4, ln4, lt4);
+			config.a4 = a4;
+			config.ln4 = ln4;
+			config.lt4 = lt4;
 		}
 		
-		const cmd = '$PAZMA,' + params.join(',') + '*00\r\n';
+		const cmd = VLBLManager.getLBP_SETACommand(config);
 		
 		Logger.logOutgoing('AZM', cmd.trim());
 		serialBridge.send(cmd);
 		
-		// Сохраняем настройки
 		saveLBLSolverSettings();
 		
-		setStatus('Конфигурация LBL решателя отправлена');
+		// Ожидаем ответ
+		lblSolverPending = true;
+		setStatus('Отправлено. Ожидание ответа...');
+		
+		if (lblSolverTimeout) clearTimeout(lblSolverTimeout);
+		lblSolverTimeout = setTimeout(() => {
+			if (lblSolverPending) {
+				lblSolverPending = false;
+				setStatus('⚠ Нет ответа от решателя');
+			}
+		}, 3000);
 	}
 
 

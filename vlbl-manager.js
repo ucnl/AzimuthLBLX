@@ -183,6 +183,8 @@ const VLBLManager = (() => {
                 return { type: 'strstp', data: parsed };
             case 'rsts':
                 return { type: 'rsts', data: parsed };
+			case 'lbp_seta':
+                return { type: 'lbp_seta', data: parsed };
             case 'ack':
                 return { type: 'ack', data: parsed };
             default:
@@ -199,6 +201,7 @@ const VLBLManager = (() => {
     function getDINFOCommand() { return AZMParser.buildDINFO_GET(); }
     function getStartCommand() { return AZMParser.buildSTRSTP(state.addressMask, state.salinityPSU, state.soundSpeedMps, state.maxDistM); }
     function getStopCommand() { return AZMParser.buildBaseStop(); }
+	function getLBP_SETACommand(config) { return AZMParser.buildLBP_SETA(config); }
 
     // ========== НАСТРОЙКИ ==========
     function setSalinity(psu) { state.salinityPSU = psu; }
@@ -234,6 +237,7 @@ const VLBLManager = (() => {
         getDINFOCommand,
         getStartCommand,
         getStopCommand,
+		getLBP_SETACommand,
         setSalinity,
         setMaxDistance,
         setSoundSpeed,
